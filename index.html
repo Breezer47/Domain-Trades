@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Trades | The Elite Circle</title>
+    
+    <!-- IBM Plex Sans Thai (ไม่มีหัว) & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-ivory: #FAF9F6;
+            --gold-light: #E8D092;
+            --gold-main: #B89655;
+            --gold-dark: #8A6D3B;
+            --dark: #1A1A1A;
+            --font-main: 'IBM Plex Sans Thai', 'Inter', sans-serif;
+            --gold-gradient: linear-gradient(135deg, #B89655 0%, #E8D092 50%, #B89655 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-ivory);
+            color: var(--dark);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Sculpted ivory background; pointer and scroll motion stay independent. */
+        body { isolation: isolate; background: var(--bg-ivory); }
+        .chart-bg {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+            background: var(--bg-ivory);
+            transform: translate3d(var(--pointer-x, 0px), var(--pointer-y, 0px), 0) scale(1.06);
+            transition: transform .8s cubic-bezier(.2,.7,.3,1);
+        }
+        .sculpture {
+            position: absolute; width: min(80vw, 1100px); height: auto;
+            fill: none; stroke: #B89655; stroke-width: .7;
+            opacity: .28; animation: sculpture-drift 22s ease-in-out infinite alternate;
+        }
+        .sculpture.left { left: -38%; top: -12%; }
+        .sculpture.right { right: -38%; bottom: -20%; transform: rotate(180deg); animation-name: sculpture-return; animation-delay: -10s; }
+        .orbit-field {
+            position: absolute; width: 76vmax; height: 76vmax; left: 54%; top: 40%;
+            border: 1px solid rgba(184,150,85,.12); border-radius: 50%;
+            transform: rotateX(62deg) rotate(-28deg);
+        }
+        .orbit-field::before, .orbit-field::after {
+            content: ''; position: absolute; border-radius: 50%; inset: 8%;
+            border: 1px solid rgba(184,150,85,.13);
+        }
+        .orbit-field::after { inset: 18%; border-style: dashed; opacity: .65; }
+        .orbit-track { position: absolute; inset: 0; animation: orbit-turn 48s linear infinite; }
+        .orbit-track::before {
+            content: ''; position: absolute; left: 50%; top: -4px; width: 8px; height: 8px;
+            border-radius: 50%; background: #B89655; box-shadow: 0 0 0 7px rgba(184,150,85,.08);
+        }
+        .market-mesh {
+            position: absolute; inset: 58% -30% -75%; opacity: .28;
+            background-image: linear-gradient(rgba(184,150,85,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(184,150,85,.22) 1px, transparent 1px);
+            background-size: 75px 75px;
+            transform: perspective(650px) rotateX(62deg);
+            mask-image: linear-gradient(transparent, black 40%, transparent);
+        }
+        .mesh-flow { width: 100%; height: 100%; background: linear-gradient(transparent 49.5%, rgba(184,150,85,.22) 50%, transparent 50.5%); animation: mesh-scan 12s ease-in-out infinite; }
+        .bg-element { position: absolute; translate: 0 var(--scroll-shift, 0px); }
+        .main-trend { width: 140%; top: 38%; left: -20%; opacity: .22; animation: trend-drift 16s ease-in-out infinite alternate; }
+        .main-trend path { stroke: #B89655; stroke-width: .8; }
+        .main-trend .signal { stroke: #8A6D3B; stroke-width: 1.8; stroke-dasharray: 45 1100; animation: signal-flow 14s linear infinite; }
+        .candle { display: flex; flex-direction: column; align-items: center; opacity: .25; animation: candle-drift 10s ease-in-out infinite alternate; }
+        .candle:nth-of-type(even) { animation-delay: -5s; }
+        .wick { width: 1px; background: #B89655; }
+        .body-candle { width: 8px; background: #B89655; border-radius: 1px; }
+        .upper-market {
+            position: absolute; top: 7%; width: clamp(140px, 20vw, 290px);
+            height: 210px; opacity: .3; color: var(--gold-main);
+            animation: upper-market-drift 13s ease-in-out infinite alternate;
+        }
+        .upper-market.left { left: 2%; }
+        .upper-market.right { right: 2%; top: 10%; animation-delay: -7s; }
+        .upper-market svg { width: 100%; height: 100%; overflow: visible; }
+        .upper-market .price-line { fill: none; stroke: currentColor; stroke-width: .8; }
+        .upper-market .price-trace { fill: none; stroke: var(--gold-dark); stroke-width: 1.4; stroke-dasharray: 24 430; animation: upper-price-flow 11s linear infinite; }
+        .upper-market .market-bar { animation: upper-bar-drift 6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+        .upper-market .market-bar:nth-child(3n) { animation-delay: -3s; }
+        .upper-market .market-bar:nth-child(3n + 1) { animation-delay: -1.5s; }
+        @keyframes upper-market-drift { to { transform: translateY(-14px); } }
+        @keyframes upper-bar-drift { to { transform: translateY(-9px); } }
+        @keyframes upper-price-flow { to { stroke-dashoffset: -454; } }
+        @media (max-width: 700px) {
+            .upper-market { opacity: .17; width: 130px; top: 5%; }
+            .upper-market.left { left: -65px; }
+            .upper-market.right { right: -65px; top: 8%; }
+        }
+        .edge-coordinate { position: absolute; font: 9px 'Inter', sans-serif; letter-spacing: 3px; color: #A58B60; writing-mode: vertical-rl; }
+        .edge-coordinate.left { left: 35px; top: 44%; }
+        .edge-coordinate.right { right: 35px; top: 22%; }
+        @keyframes sculpture-drift { to { transform: translate3d(35px, 30px, 0) rotate(8deg); } }
+        @keyframes sculpture-return { to { transform: translate3d(-30px, -25px, 0) rotate(170deg); } }
+        @keyframes orbit-turn { to { transform: rotate(360deg); } }
+        @keyframes mesh-scan { from { transform: translateY(-25%); } to { transform: translateY(25%); } }
+        @keyframes signal-flow { to { stroke-dashoffset: -1145; } }
+        @keyframes trend-drift { to { transform: translateY(-20px); } }
+        @keyframes candle-drift { to { transform: translateY(-30px); } }
+        @media (max-width: 700px) {
+            .sculpture { width: 125vw; opacity: .2; }
+            .sculpture.left { left: -85%; }
+            .sculpture.right { right: -85%; }
+            .edge-coordinate { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .chart-bg * { animation: none !important; translate: none; }
+            .chart-bg { transform: none; transition: none; }
+        }
+
+        /* --- Typography --- */
+        .gradient-text {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px; text-align: center; }
+
+        header { padding-top: 100px; margin-bottom: 50px; }
+        .logo { font-size: 1rem; letter-spacing: 8px; text-transform: uppercase; font-weight: 700; color: var(--gold-main); opacity: 0.8; }
+
+        h1 {
+            font-size: clamp(2.2rem, 6vw, 3.8rem);
+            line-height: 1.2; margin: 0 auto 25px;
+            font-weight: 700; letter-spacing: -1px;
+        }
+
+        .mid-text {
+            font-size: clamp(1.4rem, 3.5vw, 2rem);
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtext {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: #777; max-width: 850px;
+            margin: 0 auto 70px; 
+            font-weight: 300;
+            line-height: 1.8;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- Video Section --- */
+        .video-wrapper {
+            background: #fff; padding: 12px;
+            border-radius: 40px; box-shadow: 0 40px 100px rgba(0,0,0,0.04);
+            max-width: 950px; margin: 0 auto 100px;
+            border: 1px solid rgba(0,0,0,0.02);
+            position: relative;
+        }
+        .video-main {
+            width: 100%; aspect-ratio: 16 / 9; background: #F4F3F0;
+            border-radius: 30px; overflow: hidden; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .video-main video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- Premium CTA Button --- */
+        .cta-box {
+            max-width: 750px; margin: 0 auto 150px;
+            padding: 70px 40px; background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px); border-radius: 45px;
+            border: 1px solid rgba(184, 150, 85, 0.2);
+            box-shadow: 0 30px 60px rgba(184, 150, 85, 0.1);
+        }
+
+        .btn-premium {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 550px;
+            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-main) 50%, var(--gold-dark) 100%);
+            background-size: 200% auto;
+            color: white;
+            padding: 26px 40px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            box-shadow: 0 20px 50px rgba(138, 109, 59, 0.4);
+            transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+            overflow: hidden;
+        }
+
+        .btn-premium::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-25deg);
+            transition: 0.75s;
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 30px 70px rgba(138, 109, 59, 0.5);
+            background-position: right center;
+        }
+
+        .btn-premium:hover::before { left: 150%; }
+
+        /* --- FAQ Section with Advanced Dimensional Effects --- */
+        .faq-section { padding-bottom: 150px; }
+        .faq-title { font-size: clamp(1.8rem, 5vw, 2.6rem); margin-bottom: 80px; font-weight: 700; }
+
+        .faq-item {
+            max-width: 900px; 
+            margin: 0 auto 20px; 
+            background: #fff;
+            border-radius: 20px; 
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            transform-origin: center;
+        }
+
+        /* เอฟเฟกต์เมื่อ Hover */
+        .faq-item:hover {
+            border-color: rgba(184, 150, 85, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
+
+        /* เอฟเฟกต์เมื่อ Active (คลิกเปิด) */
+        .faq-item.active {
+            border-color: var(--gold-main);
+            transform: scale(1.02); /* ขยายเล็กน้อยให้ดูเด่น */
+            box-shadow: 0 30px 60px rgba(184, 150, 85, 0.15); /* เงาฟุ้งแบบลอยตัว */
+            z-index: 10;
+        }
+
+        .faq-header { 
+            padding: 28px 35px; 
+            display: flex; 
+            align-items: center; 
+            cursor: pointer; 
+            transition: background 0.3s ease;
+        }
+
+        .faq-item.active .faq-header {
+            background: linear-gradient(to right, rgba(245, 249, 246, 0.5), transparent);
+        }
+
+        .faq-number {
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            color: var(--gold-main);
+            border: 1px solid rgba(184, 150, 85, 0.3); 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            margin-right: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .faq-item.active .faq-number {
+            background: var(--gold-main);
+            color: #fff;
+            border-color: var(--gold-main);
+        }
+
+        .faq-question { 
+            font-size: 1.25rem; 
+            color: var(--dark); 
+            font-weight: 600; 
+            flex-grow: 1; 
+            text-align: left; 
+        }
+
+        .arrow-svg { 
+            width: 22px; 
+            height: 22px; 
+            color: var(--gold-main); 
+            transition: transform 0.6s cubic-bezier(0.68, -0.6, 0.32, 1.6); 
+        }
+
+        .faq-item.active .arrow-svg { 
+            transform: rotate(180deg); 
+            color: var(--gold-dark);
+        }
+
+        /* Keep every FAQ video visible. */
+        .faq-content {
+            padding: 0 35px 35px;
+        }
+
+        .faq-video-inner {
+            background: var(--bg-ivory);
+            padding: 12px;
+            border-radius: 24px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .video-box { 
+            width: 100%; 
+            aspect-ratio: 16 / 9; 
+            background: #E5E4E0; 
+            border-radius: 18px; 
+            overflow: hidden; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .video-load-error { color: #8A6D3B; font-size: .9rem; padding: 12px; }
+        .video-box video { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <!-- Parallax Background Layer -->
+    <div class="chart-bg" id="bg-master" aria-hidden="true">
+        <svg class="sculpture left" viewBox="0 0 800 1100"><path d="M 80,40 C 600,80 130,440 590,710 S 180,920 670,1030" /><path d="M 89,40 C 595,86 133,438 585,706 S 184,920 664,1030" /><path d="M 98,40 C 590,92 136,436 580,702 S 188,920 658,1030" /><path d="M 107,40 C 585,98 139,434 575,698 S 192,920 652,1030" /><path d="M 116,40 C 580,104 142,432 570,694 S 196,920 646,1030" /><path d="M 125,40 C 575,110 145,430 565,690 S 200,920 640,1030" /><path d="M 134,40 C 570,116 148,428 560,686 S 204,920 634,1030" /><path d="M 143,40 C 565,122 151,426 555,682 S 208,920 628,1030" /><path d="M 152,40 C 560,128 154,424 550,678 S 212,920 622,1030" /><path d="M 161,40 C 555,134 157,422 545,674 S 216,920 616,1030" /><path d="M 170,40 C 550,140 160,420 540,670 S 220,920 610,1030" /><path d="M 179,40 C 545,146 163,418 535,666 S 224,920 604,1030" /><path d="M 188,40 C 540,152 166,416 530,662 S 228,920 598,1030" /><path d="M 197,40 C 535,158 169,414 525,658 S 232,920 592,1030" /><path d="M 206,40 C 530,164 172,412 520,654 S 236,920 586,1030" /><path d="M 215,40 C 525,170 175,410 515,650 S 240,920 580,1030" /><path d="M 224,40 C 520,176 178,408 510,646 S 244,920 574,1030" /><path d="M 233,40 C 515,182 181,406 505,642 S 248,920 568,1030" /><path d="M 242,40 C 510,188 184,404 500,638 S 252,920 562,1030" /><path d="M 251,40 C 505,194 187,402 495,634 S 256,920 556,1030" /><path d="M 260,40 C 500,200 190,400 490,630 S 260,920 550,1030" /><path d="M 269,40 C 495,206 193,398 485,626 S 264,920 544,1030" /><path d="M 278,40 C 490,212 196,396 480,622 S 268,920 538,1030" /><path d="M 287,40 C 485,218 199,394 475,618 S 272,920 532,1030" /><path d="M 296,40 C 480,224 202,392 470,614 S 276,920 526,1030" /><path d="M 305,40 C 475,230 205,390 465,610 S 280,920 520,1030" /><path d="M 314,40 C 470,236 208,388 460,606 S 284,920 514,1030" /><path d="M 323,40 C 465,242 211,386 455,602 S 288,920 508,1030" /></svg>
+        <svg class="sculpture right" viewBox="0 0 800 1100"><path d="M 80,40 C 600,80 130,440 590,710 S 180,920 670,1030" /><path d="M 89,40 C 595,86 133,438 585,706 S 184,920 664,1030" /><path d="M 98,40 C 590,92 136,436 580,702 S 188,920 658,1030" /><path d="M 107,40 C 585,98 139,434 575,698 S 192,920 652,1030" /><path d="M 116,40 C 580,104 142,432 570,694 S 196,920 646,1030" /><path d="M 125,40 C 575,110 145,430 565,690 S 200,920 640,1030" /><path d="M 134,40 C 570,116 148,428 560,686 S 204,920 634,1030" /><path d="M 143,40 C 565,122 151,426 555,682 S 208,920 628,1030" /><path d="M 152,40 C 560,128 154,424 550,678 S 212,920 622,1030" /><path d="M 161,40 C 555,134 157,422 545,674 S 216,920 616,1030" /><path d="M 170,40 C 550,140 160,420 540,670 S 220,920 610,1030" /><path d="M 179,40 C 545,146 163,418 535,666 S 224,920 604,1030" /><path d="M 188,40 C 540,152 166,416 530,662 S 228,920 598,1030" /><path d="M 197,40 C 535,158 169,414 525,658 S 232,920 592,1030" /><path d="M 206,40 C 530,164 172,412 520,654 S 236,920 586,1030" /><path d="M 215,40 C 525,170 175,410 515,650 S 240,920 580,1030" /><path d="M 224,40 C 520,176 178,408 510,646 S 244,920 574,1030" /><path d="M 233,40 C 515,182 181,406 505,642 S 248,920 568,1030" /><path d="M 242,40 C 510,188 184,404 500,638 S 252,920 562,1030" /><path d="M 251,40 C 505,194 187,402 495,634 S 256,920 556,1030" /><path d="M 260,40 C 500,200 190,400 490,630 S 260,920 550,1030" /><path d="M 269,40 C 495,206 193,398 485,626 S 264,920 544,1030" /><path d="M 278,40 C 490,212 196,396 480,622 S 268,920 538,1030" /><path d="M 287,40 C 485,218 199,394 475,618 S 272,920 532,1030" /><path d="M 296,40 C 480,224 202,392 470,614 S 276,920 526,1030" /><path d="M 305,40 C 475,230 205,390 465,610 S 280,920 520,1030" /><path d="M 314,40 C 470,236 208,388 460,606 S 284,920 514,1030" /><path d="M 323,40 C 465,242 211,386 455,602 S 288,920 508,1030" /></svg>
+        <div class="upper-market left"><svg viewBox="0 0 270 210" fill="none"><g class="market-bar" stroke="currentColor"><line x1="18" y1="106" x2="18" y2="155" stroke-width="1"/><rect x="14" y="120" width="8" height="22" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="50" y1="107" x2="50" y2="164" stroke-width="1"/><rect x="46" y="121" width="8" height="30" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="82" y1="77" x2="82" y2="122" stroke-width="1"/><rect x="78" y="91" width="8" height="18" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="114" y1="73" x2="114" y2="127" stroke-width="1"/><rect x="110" y="87" width="8" height="27" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="146" y1="74" x2="146" y2="123" stroke-width="1"/><rect x="142" y="88" width="8" height="22" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="178" y1="44" x2="178" y2="101" stroke-width="1"/><rect x="174" y="58" width="8" height="30" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="210" y1="40" x2="210" y2="85" stroke-width="1"/><rect x="206" y="54" width="8" height="18" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><path class="price-line" d="M4 175 L42 160 L76 170 L110 128 L146 141 L180 106 L220 114 L250 80"/><path class="price-trace" d="M4 175 L42 160 L76 170 L110 128 L146 141 L180 106 L220 114 L250 80"/></svg></div>
+        <div class="upper-market right"><svg viewBox="0 0 270 210" fill="none"><g class="market-bar" stroke="currentColor"><line x1="18" y1="106" x2="18" y2="155" stroke-width="1"/><rect x="14" y="120" width="8" height="22" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="50" y1="107" x2="50" y2="164" stroke-width="1"/><rect x="46" y="121" width="8" height="30" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="82" y1="77" x2="82" y2="122" stroke-width="1"/><rect x="78" y="91" width="8" height="18" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="114" y1="73" x2="114" y2="127" stroke-width="1"/><rect x="110" y="87" width="8" height="27" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="146" y1="74" x2="146" y2="123" stroke-width="1"/><rect x="142" y="88" width="8" height="22" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="178" y1="44" x2="178" y2="101" stroke-width="1"/><rect x="174" y="58" width="8" height="30" rx="1" fill="currentColor" stroke-width="1"/></g><g class="market-bar" stroke="currentColor"><line x1="210" y1="40" x2="210" y2="85" stroke-width="1"/><rect x="206" y="54" width="8" height="18" rx="1" fill="var(--bg-ivory)" stroke-width="1"/></g><path class="price-line" d="M4 175 L42 160 L76 170 L110 128 L146 141 L180 106 L220 114 L250 80"/><path class="price-trace" d="M4 175 L42 160 L76 170 L110 128 L146 141 L180 106 L220 114 L250 80"/></svg></div>
+        <div class="orbit-field"><div class="orbit-track"></div></div>
+        <div class="market-mesh"><div class="mesh-flow"></div></div>
+        <span class="edge-coordinate left">DOMAIN TRADES / PRECISION IN EVERY MOVE</span>
+        <svg class="bg-element main-trend" id="trend-layer" viewBox="0 0 1000 200">
+            <path d="M0,180 L150,165 L300,175 L450,110 L600,125 L800,45 L1000,55" fill="none" stroke="#B89655" stroke-width="1" />
+            <path class="signal" d="M0,180 L150,165 L300,175 L450,110 L600,125 L800,45 L1000,55" fill="none" stroke="#B89655" stroke-width="1" />
+        </svg>
+        <div class="bg-element candle" style="top: 15%; left: 8%;" data-depth="0.1">
+            <div class="wick" style="height: 60px;"></div>
+            <div class="body-candle" style="height: 25px; position: absolute; top: 15px;"></div>
+        </div>
+        <div class="bg-element candle" style="bottom: 25%; right: 10%;" data-depth="0.25">
+            <div class="wick" style="height: 90px;"></div>
+            <div class="body-candle" style="height: 35px; position: absolute; top: 25px;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header><div class="logo">Domain Trades</div></header>
+
+        <h1>
+            คุณกำลังเรียนรู้การเทรด<br>
+            หรือกำลัง<span class="gradient-text">เสียเวลา</span>ไปกับการลองผิดลองถูก?
+        </h1>
+
+        <p class="mid-text">ดูวิดีโอนี้ เพื่อรู้ว่าควรหยุดเสียเวลาไปกับอะไร</p>
+        
+        <p class="subtext">
+            การลองผิดลองถูกเป็นส่วนหนึ่งของการเรียนรู้<br>
+            แต่คุณไม่จำเป็นต้องเสียเวลาไปกับทุกความผิดพลาดด้วยตัวเอง
+        </p>
+
+        <!-- Video Frame -->
+        <div class="video-wrapper">
+            <div class="video-main">
+                <video controls autoplay playsinline preload="auto" poster="media/faq-poster-1.jpg" id="intro-video">
+                    <source src="media/faq-video-1.mp4?v=web1" type="video/mp4">
+                </video>
+            </div>
+        </div>
+
+        <!-- Premium CTA Section -->
+        <div class="cta-box">
+            <h2 style="font-size: 1.8rem; font-weight: 600; margin-bottom: 40px;">
+                มาเป็นส่วนหนึ่งของ<span class="gradient-text">การเดินทาง</span>
+            </h2>
+            <a href="https://lin.ee/RvPZdhK" target="_blank" rel="noopener noreferrer" class="btn-premium">
+                ติดต่อผมที่นี่
+            </a>
+        </div>
+
+        <!-- FAQ Section -->
+        <section class="faq-section">
+            <h2 class="faq-title">ทุกคำถามที่คุณอยากรู้เกี่ยวกับ <span class="gradient-text">Domain Trades</span></h2>
+            <div id="faq-container"></div>
+        </section>
+    </div>
+
+    <script>
+        const faqData = [
+            "ทำไมเราถึงสร้าง Community?",
+            "ใน Community นี้คุณจะได้รับอะไรบ้าง?",
+            "$WEEP Model คืออะไร และผล Backtest เป็นอย่างไร?",
+            "ทำไมคุณถึงควรเชื่อใจ Domain Trades ในยุคที่มีโค้ชปลอมเต็มไปหมด?",
+            "ในเมื่อมีข้อมูลฟรีมากมายบนโลกออนไลน์ ทำไมคุณถึงควรเรียนรู้กับ Domain Trades",
+            "ต้องใช้เวลานานแค่ไหนกว่าจะเริ่มทำกำไรได้?",
+            "โมเดลการเทรดของ Domain Trades ทำงานอย่างไร?",
+            "คุณจะรู้ได้อย่างไรว่าโมเดลการเทรดของ Domain Trades เหมาะกับคุณ?",
+            "คุณจะรู้ได้อย่างไรว่าตัวเองเหมาะกับการเป็น Trader จริง ๆ?",
+            "ใครคือผู้ก่อตั้ง ของ Domain Trades?"
+        ];
+
+        const container = document.getElementById('faq-container');
+        faqData.forEach((q, i) => {
+            const num = (i + 1).toString().padStart(2, '0');
+            container.innerHTML += `
+                <div class="faq-item">
+                    <div class="faq-header" onclick="playFAQ(this)">
+                        <div class="faq-number">${num}</div>
+                        <div class="faq-question">${q}</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-video-inner">
+                            <div class="video-box">
+                                <video controls playsinline preload="none" poster="media/faq-poster-${i + 1}.jpg">
+                                    <source src="media/faq-video-${i + 1}.mp4?v=web1" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        function playFAQ(header) {
+            const video = header.parentElement.querySelector('video');
+            pauseOtherVideos(video);
+            video.play().catch(() => {});
+        }
+
+        function pauseOtherVideos(currentVideo) {
+            document.querySelectorAll('video').forEach(video => {
+                if (video !== currentVideo) video.pause();
+            });
+        }
+
+        document.querySelectorAll('video').forEach(video => {
+            video.addEventListener('play', () => pauseOtherVideos(video));
+            video.addEventListener('error', () => {
+                if (video.parentElement.querySelector('.video-load-error')) return;
+                const message = document.createElement('p');
+                message.className = 'video-load-error';
+                message.textContent = 'โหลดคลิปไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ หรือตรวจว่าโฟลเดอร์ media อยู่ครบ';
+                video.parentElement.insertAdjacentElement('afterend', message);
+            }, true);
+        });
+
+        const introVideo = document.getElementById('intro-video');
+        async function playIntroWithSound() {
+            introVideo.defaultMuted = false;
+            introVideo.muted = false;
+            introVideo.volume = 1;
+            try {
+                await introVideo.play();
+            } catch {
+                // Audible autoplay remains subject to browser permissions.
+            }
+        }
+        window.addEventListener('pageshow', () => {
+            document.querySelectorAll('.faq-item video').forEach(video => {
+                video.autoplay = false;
+                video.pause();
+            });
+            introVideo.currentTime = 0;
+            playIntroWithSound();
+        });
+
+        // Keep pointer/scroll parallax separate from continuous CSS animation.
+        const background = document.getElementById('bg-master');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        document.addEventListener('mousemove', (event) => {
+            if (reducedMotion.matches) return;
+            background.style.setProperty('--pointer-x', `${(window.innerWidth / 2 - event.clientX) / 65}px`);
+            background.style.setProperty('--pointer-y', `${(window.innerHeight / 2 - event.clientY) / 65}px`);
+        });
+        let scrollFrame = false;
+        window.addEventListener('scroll', () => {
+            if (scrollFrame || reducedMotion.matches) return;
+            scrollFrame = true;
+            requestAnimationFrame(() => {
+                const offset = window.scrollY;
+                document.getElementById('trend-layer').style.setProperty('--scroll-shift', `${offset * .12}px`);
+                document.querySelectorAll('.candle').forEach(candle => {
+                    candle.style.setProperty('--scroll-shift', `${offset * Number(candle.dataset.depth)}px`);
+                });
+                scrollFrame = false;
+            });
+        }, { passive: true });
+    </script>
+</body>
+</html>
