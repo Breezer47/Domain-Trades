@@ -438,8 +438,8 @@
                     <div class="faq-content">
                         <div class="faq-video-inner">
                             <div class="video-box">
-                                <video controls playsinline preload="none" poster="faq-poster-${i + 1}.jpg">
-                                    <source src="faq-video-${i + 1}.mp4?v=web1" type="video/mp4">
+                                <video controls playsinline preload="none" poster="${i === 0 ? 'faq-poster-1-v2.jpg' : `faq-poster-${i + 1}.jpg`}">
+                                    <source src="${i === 0 ? 'faq-video-1-v2.mp4' : `faq-video-${i + 1}.mp4`}?v=web2" type="video/mp4">
                                 </video>
                             </div>
                         </div>
